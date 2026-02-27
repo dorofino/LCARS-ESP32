@@ -1,0 +1,11 @@
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+node_modules/
+__pycache__/
+*.pyc
+.claude/
