@@ -48,6 +48,7 @@ enum LcarsThemeId {
     LCARS_THEME_TNG = 0,       // Classic TNG orange/amber/violet
     LCARS_THEME_NEMESIS,       // Star Trek Nemesis blue palette
     LCARS_THEME_RED_ALERT,     // All red, flashing
+    LCARS_THEME_LOWER_DECKS,   // Bright purple/magenta/cyan
     LCARS_THEME_COUNT
 };
 
@@ -56,4 +57,5 @@ namespace LcarsThemes {
     const LcarsTheme& tng();
     const LcarsTheme& nemesis();
     const LcarsTheme& redAlert();
+    const LcarsTheme& lowerDecks();
 }

@@ -55,5 +55,16 @@
 #define LCARS_NEM_TANGERINE LCARS_RGB565(0xFF, 0x88, 0x33)  // #FF8833
 #define LCARS_NEM_CARDINAL  LCARS_RGB565(0xCC, 0x22, 0x33)  // #CC2233
 
+// ── Lower Decks Palette ───────────────────────────────────
+// Brighter, more saturated — vivid purple/magenta/cyan
+#define LCARS_LD_PURPLE     LCARS_RGB565(0xBB, 0x44, 0xFF)  // #BB44FF — vivid purple
+#define LCARS_LD_MAGENTA    LCARS_RGB565(0xFF, 0x44, 0xCC)  // #FF44CC — hot pink
+#define LCARS_LD_CYAN       LCARS_RGB565(0x44, 0xDD, 0xFF)  // #44DDFF — bright cyan
+#define LCARS_LD_CORAL      LCARS_RGB565(0xFF, 0x66, 0x88)  // #FF6688 — coral pink
+#define LCARS_LD_LIME       LCARS_RGB565(0x66, 0xFF, 0x66)  // #66FF66 — bright green
+#define LCARS_LD_TANGERINE  LCARS_RGB565(0xFF, 0x88, 0x22)  // #FF8822 — vivid orange
+#define LCARS_LD_SKY        LCARS_RGB565(0x66, 0xBB, 0xFF)  // #66BBFF — sky blue
+#define LCARS_LD_LAVENDER   LCARS_RGB565(0xDD, 0x88, 0xFF)  // #DD88FF — bright lavender
+
 // ── UI Constants ────────────────────────────────────────────
 #define LCARS_BAR_TRACK     LCARS_RGB565(0x1A, 0x1A, 0x1A)  // #1A1A1A — unfilled bar

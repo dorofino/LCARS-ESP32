@@ -106,6 +106,7 @@ void loop() {
 | `lcars_theme` | Color theme system with TNG/Nemesis/RedAlert presets |
 | `lcars_font` | Antonio font management at 7 sizes |
 | `lcars_animation` | Boot sequence, easing functions |
+| `lcars_audio` | Optional buzzer chirps for UI feedback |
 | `lcars_colors` | RGB565 color palette definitions |
 | `lcars_config` | Layout constants, timing, dimensions |
 
@@ -119,6 +120,9 @@ Cool blue palette from Star Trek: Nemesis.
 
 ### Red Alert
 All red with white text. Pair with blinking indicators.
+
+### Lower Decks
+Vivid purple/magenta/cyan — brighter and more saturated, matching the animated series aesthetic.
 
 ### Custom Theme
 
@@ -164,6 +168,23 @@ Antonio font (Google Fonts) pre-compiled to VLW format at 7 sizes:
 - **`drawDataCascade()`** — Streaming hex numbers (visual flair)
 - **`drawIndicator()`** — Blinking status circle
 - **`drawSeparator()`** — Thin horizontal line
+- **`formatCount()`** — Format large numbers: `1234567` → `"1.23M"`
+- **`formatCost()`** — Format currency values
+
+## Audio
+
+Optional buzzer/speaker support for UI feedback chirps. All beeps are non-blocking.
+
+```cpp
+LcarsAudio::begin(BUZZER_PIN);  // Pass -1 to disable
+LcarsAudio::beepHigh();         // Button press chirp
+LcarsAudio::beepLow();          // Screen transition tone
+LcarsAudio::beepConfirm();      // Two-tone rising confirmation
+LcarsAudio::beepAlert();        // Three rapid alert beeps
+LcarsAudio::beepBoot();         // Ascending sweep for boot complete
+```
+
+Call `LcarsAudio::update()` in your `loop()` to handle multi-tone sequences.
 
 ## LCARS Design References
 
@@ -186,6 +207,5 @@ PRs welcome! Some ideas:
 - More widgets (chart, table, scrolling list)
 - Touch input support
 - More themes (Lower Decks, Discovery, Picard)
-- Sound effects (buzzer beeps for button presses)
 - Multi-display support
 - WASM/web version for the WYSIWYG designer

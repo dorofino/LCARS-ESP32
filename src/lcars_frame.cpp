@@ -2,49 +2,6 @@
 #include "lcars_font.h"
 
 // ============================================================
-// Internal: Anti-aliased quarter circle fill
-// Uses scanline fill with single-pixel AA at the edge
-// ============================================================
-
-static void fillQuarterCircleAA(TFT_eSprite& spr, int16_t cx, int16_t cy,
-                                 int16_t r, uint16_t color, uint16_t bgColor,
-                                 LcarsElbowPos quadrant) {
-    // Use TFT_eSPI's drawSmoothArc for anti-aliased rendering
-    // Arc angles (TFT_eSPI convention: 0=right, 90=down, 180=left, 270=up, clockwise)
-    //
-    // We draw a FILLED sector (ir=0) of the background color to cut into the frame,
-    // creating the smooth inner curve of the elbow.
-    //
-    // For each elbow orientation, the curve cuts from the inner corner
-    // into the colored area:
-
-    uint32_t startAngle, endAngle;
-
-    switch (quadrant) {
-        case LCARS_ELBOW_TL:
-            // Inner corner at bottom-right of elbow, curve cuts toward top-left
-            startAngle = 180; endAngle = 270;
-            break;
-        case LCARS_ELBOW_TR:
-            // Inner corner at bottom-left of elbow, curve cuts toward top-right
-            startAngle = 270; endAngle = 360;
-            break;
-        case LCARS_ELBOW_BL:
-            // Inner corner at top-right of elbow, curve cuts toward bottom-left
-            startAngle = 90; endAngle = 180;
-            break;
-        case LCARS_ELBOW_BR:
-            // Inner corner at top-left of elbow, curve cuts toward bottom-right
-            startAngle = 0; endAngle = 90;
-            break;
-    }
-
-    // drawSmoothArc: filled sector (inner radius = 0)
-    // fg = black (cutting out), bg = colored frame (for AA blending)
-    spr.drawSmoothArc(cx, cy, r, 0, startAngle, endAngle, color, bgColor, false);
-}
-
-// ============================================================
 // Elbow
 // ============================================================
 
@@ -54,50 +11,52 @@ void LcarsFrame::drawElbow(TFT_eSprite& spr, int16_t x, int16_t y,
     int16_t ew = sideW + innerR;  // Elbow total width
     int16_t eh = barH + innerR;   // Elbow total height
 
+    // Additive approach: draw bar rect + sidebar rect + colored arc
+    // This avoids holes from drawSmoothArc(ir=0) not filling to center
+
     switch (pos) {
         case LCARS_ELBOW_TL:
-            // ████████████  <- bar row (full width)
-            // ████████████
+            // ████████████  <- bar row (full width ew)
             // ██████╲
-            // ██████ │     <- sidebar column (sideW only)
-            spr.fillRect(x, y, ew, barH, color);            // Top row
-            spr.fillRect(x, y + barH, sideW, innerR, color); // Left column
-            // Cut the inner curve: black quarter-circle at (x+sideW, y+barH)
-            fillQuarterCircleAA(spr, x + sideW, y + barH, innerR,
-                                LCARS_BLACK, color, LCARS_ELBOW_TL);
+            // ██████ │     <- sidebar column (sideW)
+            spr.fillRect(x, y, ew, barH, color);                    // Bar
+            spr.fillRect(x, y + barH, sideW, innerR, color);        // Sidebar
+            // Colored arc fills the curved transition area (upper-left quadrant from center)
+            spr.drawSmoothArc(x + sideW, y + barH, innerR, 0,
+                              270, 360, color, LCARS_BLACK, false);
             break;
 
         case LCARS_ELBOW_TR:
             // ████████████  <- bar row
-            // ████████████
             //       ╱██████
             //      │ ██████  <- sidebar on right
-            spr.fillRect(x, y, ew, barH, color);
-            spr.fillRect(x + innerR, y + barH, sideW, innerR, color);
-            fillQuarterCircleAA(spr, x + innerR, y + barH, innerR,
-                                LCARS_BLACK, color, LCARS_ELBOW_TR);
+            spr.fillRect(x, y, ew, barH, color);                    // Bar
+            spr.fillRect(x + innerR, y + barH, sideW, innerR, color); // Sidebar
+            // Upper-right quadrant
+            spr.drawSmoothArc(x + innerR, y + barH, innerR, 0,
+                              0, 90, color, LCARS_BLACK, false);
             break;
 
         case LCARS_ELBOW_BL:
             // ██████ │     <- sidebar on left
             // ██████╱
-            // ████████████
             // ████████████  <- bar row
-            spr.fillRect(x, y, sideW, innerR, color);
-            spr.fillRect(x, y + innerR, ew, barH, color);
-            fillQuarterCircleAA(spr, x + sideW, y + innerR, innerR,
-                                LCARS_BLACK, color, LCARS_ELBOW_BL);
+            spr.fillRect(x, y, sideW, innerR, color);               // Sidebar
+            spr.fillRect(x, y + innerR, ew, barH, color);           // Bar
+            // Lower-left quadrant
+            spr.drawSmoothArc(x + sideW, y + innerR, innerR, 0,
+                              180, 270, color, LCARS_BLACK, false);
             break;
 
         case LCARS_ELBOW_BR:
             //      │ ██████  <- sidebar on right
             //       ╲██████
-            // ████████████
             // ████████████  <- bar row
-            spr.fillRect(x + innerR, y, sideW, innerR, color);
-            spr.fillRect(x, y + innerR, ew, barH, color);
-            fillQuarterCircleAA(spr, x + innerR, y + innerR, innerR,
-                                LCARS_BLACK, color, LCARS_ELBOW_BR);
+            spr.fillRect(x + innerR, y, sideW, innerR, color);      // Sidebar
+            spr.fillRect(x, y + innerR, ew, barH, color);           // Bar
+            // Lower-right quadrant
+            spr.drawSmoothArc(x + innerR, y + innerR, innerR, 0,
+                              90, 180, color, LCARS_BLACK, false);
             break;
     }
 }
@@ -109,33 +68,21 @@ void LcarsFrame::drawElbow(TFT_eSprite& spr, int16_t x, int16_t y,
 void LcarsFrame::drawBar(TFT_eSprite& spr, int16_t x, int16_t y,
                           int16_t w, int16_t h, uint16_t color,
                           LcarsBarCap leftCap, LcarsBarCap rightCap) {
-    int16_t capR = h / 2;
+    int16_t r = h / 2;
+    bool roundL = (leftCap == LCARS_CAP_PILL);
+    bool roundR = (rightCap == LCARS_CAP_PILL);
 
-    // Draw the main body
-    int16_t bodyX = x;
-    int16_t bodyW = w;
-
-    if (leftCap == LCARS_CAP_PILL) {
-        bodyX += capR;
-        bodyW -= capR;
-    }
-    if (rightCap == LCARS_CAP_PILL) {
-        bodyW -= capR;
-    }
-
-    if (bodyW > 0) {
-        spr.fillRect(bodyX, y, bodyW, h, color);
-    }
-
-    // Draw pill caps (semicircles)
-    if (leftCap == LCARS_CAP_PILL) {
-        spr.fillSmoothCircle(x + capR, y + capR, capR, color, LCARS_BLACK);
-        // Fill the right half to merge with body
-        spr.fillRect(x + capR, y, 1, h, color);
-    }
-    if (rightCap == LCARS_CAP_PILL) {
-        spr.fillSmoothCircle(x + w - capR - 1, y + capR, capR, color, LCARS_BLACK);
-        spr.fillRect(x + w - capR - 1, y, 1, h, color);
+    if (roundL || roundR) {
+        // Draw full rounded rect, then square off unwanted sides
+        spr.fillSmoothRoundRect(x, y, w, h, r, color, LCARS_BLACK);
+        if (!roundL) {
+            spr.fillRect(x, y, r, h, color);       // Square off left
+        }
+        if (!roundR) {
+            spr.fillRect(x + w - r, y, r, h, color); // Square off right
+        }
+    } else {
+        spr.fillRect(x, y, w, h, color);
     }
 }
 
@@ -144,13 +91,13 @@ void LcarsFrame::drawBarPartial(TFT_eSprite& spr, int16_t startX, int16_t endX,
                                  LcarsBarCap endCap) {
     if (endX <= startX) return;
 
-    int16_t capR = h / 2;
+    int16_t r = h / 2;
     int16_t barW = endX - startX;
 
-    if (endCap == LCARS_CAP_PILL && barW > capR * 2) {
-        spr.fillRect(startX, y, barW - capR, h, color);
-        spr.fillSmoothCircle(endX - capR - 1, y + capR, capR, color, LCARS_BLACK);
-        spr.fillRect(endX - capR - 1, y, 1, h, color);
+    if (endCap == LCARS_CAP_PILL && barW > r * 2) {
+        // Rounded right end, flat left end
+        spr.fillSmoothRoundRect(startX, y, barW, h, r, color, LCARS_BLACK);
+        spr.fillRect(startX, y, r, h, color);  // Square off left
     } else {
         spr.fillRect(startX, y, barW, h, color);
     }
@@ -223,11 +170,11 @@ LcarsFrame::Rect LcarsFrame::drawStandardFrame(TFT_eSprite& spr,
                     theme.sidebar, theme.sidebarCount, 2);
     }
 
-    // Return content area
+    // Return content area (tight fit for small displays)
     return {
-        (int16_t)(SW + R + 4),
-        (int16_t)(TH + 8),
-        (int16_t)(W - SW - R - 8),
-        (int16_t)(H - TH - BH - 12)
+        (int16_t)(SW + R + GAP + 1),
+        (int16_t)(TH + 4),
+        (int16_t)(W - SW - R - GAP - 3),
+        (int16_t)(H - TH - BH - 6)
     };
 }

@@ -76,5 +76,6 @@ private:
     int8_t   _blPin = -1;
 
     void _doTransition();
+    void _drawTransitionFrame(float t, LcarsScreen* screen);
     void _renderFrame();
 };

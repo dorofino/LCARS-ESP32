@@ -18,14 +18,14 @@ void LcarsEngine::begin(TFT_eSPI& tft, int16_t width, int16_t height) {
 
     // Initialize display
     _tft->init();
-    _tft->setRotation(3);  // Landscape
+    _tft->invertDisplay(true);  // ST7789 panels need inversion for correct colors
+    _tft->setRotation(3);       // Landscape
     _tft->fillScreen(TFT_BLACK);
 
     // Create full-screen sprite in PSRAM
     _spr = new TFT_eSprite(_tft);
     _spr->setColorDepth(16);
     _spr->createSprite(_width, _height);
-    _spr->setSwapBytes(true);
     _spr->fillSprite(TFT_BLACK);
 
     _lastFrameMs = millis();
@@ -104,29 +104,7 @@ void LcarsEngine::_doTransition() {
         _spr->fillSprite(_theme->background);
 
         if (_screen && _screen->wantsFrame()) {
-            const int16_t SW = LCARS_SIDEBAR_W;
-            const int16_t R  = LCARS_ELBOW_R;
-            const int16_t TH = LCARS_TOPBAR_H;
-            const int16_t BH = LCARS_BOTBAR_H;
-            const int16_t GAP = LCARS_BAR_GAP;
-            const int16_t barX = SW + R + GAP;
-
-            LcarsFrame::drawElbow(*_spr, 0, 0, SW, TH, R, _theme->elbowTop, LCARS_ELBOW_TL);
-            LcarsFrame::drawElbow(*_spr, 0, _height - BH - R, SW, BH, R,
-                                  _theme->elbowBottom, LCARS_ELBOW_BL);
-
-            int16_t sideTop = TH + R + 2;
-            int16_t sideH = _height - TH - BH - 2 * R - 4;
-            if (sideH > 0) {
-                LcarsFrame::drawSidebar(*_spr, 0, sideTop, SW, sideH,
-                                        _theme->sidebar, _theme->sidebarCount, 2);
-            }
-
-            int16_t barEnd = barX + (int16_t)((_width - barX) * (1.0f - t));
-            LcarsFrame::drawBarPartial(*_spr, barX, barEnd, 0, TH,
-                                       _theme->barTop, LCARS_CAP_PILL);
-            LcarsFrame::drawBarPartial(*_spr, barX, barEnd, _height - BH, BH,
-                                       _theme->barBottom, LCARS_CAP_PILL);
+            _drawTransitionFrame(1.0f - t, _screen);
         }
         _spr->pushSprite(0, 0);
 
@@ -144,29 +122,7 @@ void LcarsEngine::_doTransition() {
         _spr->fillSprite(_theme->background);
 
         if (_screen && _screen->wantsFrame()) {
-            const int16_t SW = LCARS_SIDEBAR_W;
-            const int16_t R  = LCARS_ELBOW_R;
-            const int16_t TH = LCARS_TOPBAR_H;
-            const int16_t BH = LCARS_BOTBAR_H;
-            const int16_t GAP = LCARS_BAR_GAP;
-            const int16_t barX = SW + R + GAP;
-
-            LcarsFrame::drawElbow(*_spr, 0, 0, SW, TH, R, _theme->elbowTop, LCARS_ELBOW_TL);
-            LcarsFrame::drawElbow(*_spr, 0, _height - BH - R, SW, BH, R,
-                                  _theme->elbowBottom, LCARS_ELBOW_BL);
-
-            int16_t sideTop = TH + R + 2;
-            int16_t sideH = _height - TH - BH - 2 * R - 4;
-            if (sideH > 0) {
-                LcarsFrame::drawSidebar(*_spr, 0, sideTop, SW, sideH,
-                                        _theme->sidebar, _theme->sidebarCount, 2);
-            }
-
-            int16_t barEnd = barX + (int16_t)((_width - barX) * t);
-            LcarsFrame::drawBarPartial(*_spr, barX, barEnd, 0, TH,
-                                       _theme->barTop, LCARS_CAP_PILL);
-            LcarsFrame::drawBarPartial(*_spr, barX, barEnd, _height - BH, BH,
-                                       _theme->barBottom, LCARS_CAP_PILL);
+            _drawTransitionFrame(t, _screen);
         }
         _spr->pushSprite(0, 0);
 
@@ -191,11 +147,12 @@ void LcarsEngine::_renderFrame() {
 
         const char* t = _screen->title();
         if (t && t[0]) {
+            // Title sits in the top bar, rendered as dark text on the bar color
             LcarsFont::drawTextUpper(*_spr, t,
-                                     LCARS_SIDEBAR_W + LCARS_ELBOW_R + 6,
+                                     LCARS_SIDEBAR_W + LCARS_ELBOW_R + LCARS_BAR_GAP + 4,
                                      LCARS_TOPBAR_H / 2,
-                                     LCARS_FONT_MD, _theme->text,
-                                     _theme->background, ML_DATUM);
+                                     LCARS_FONT_SM, _theme->textOnBar,
+                                     _theme->barTop, ML_DATUM);
         }
 
         _screen->onDraw(*_spr, content);
@@ -206,6 +163,42 @@ void LcarsEngine::_renderFrame() {
     }
 
     _spr->pushSprite(0, 0);
+}
+
+void LcarsEngine::_drawTransitionFrame(float t, LcarsScreen* screen) {
+    const int16_t SW = LCARS_SIDEBAR_W;
+    const int16_t R  = LCARS_ELBOW_R;
+    const int16_t TH = LCARS_TOPBAR_H;
+    const int16_t BH = LCARS_BOTBAR_H;
+    const int16_t GAP = LCARS_BAR_GAP;
+    const int16_t barX = SW + R + GAP;
+
+    LcarsFrame::drawElbow(*_spr, 0, 0, SW, TH, R, _theme->elbowTop, LCARS_ELBOW_TL);
+    LcarsFrame::drawElbow(*_spr, 0, _height - BH - R, SW, BH, R,
+                          _theme->elbowBottom, LCARS_ELBOW_BL);
+
+    int16_t sideTop = TH + R + 2;
+    int16_t sideH = _height - TH - BH - 2 * R - 4;
+    if (sideH > 0) {
+        LcarsFrame::drawSidebar(*_spr, 0, sideTop, SW, sideH,
+                                _theme->sidebar, _theme->sidebarCount, 2);
+    }
+
+    int16_t barEnd = barX + (int16_t)((_width - barX) * t);
+    LcarsFrame::drawBarPartial(*_spr, barX, barEnd, 0, TH,
+                               _theme->barTop, LCARS_CAP_PILL);
+    LcarsFrame::drawBarPartial(*_spr, barX, barEnd, _height - BH, BH,
+                               _theme->barBottom, LCARS_CAP_PILL);
+
+    // Draw title on the extending bar (only when bar is long enough)
+    const char* titleText = screen ? screen->title() : nullptr;
+    int16_t titleX = barX + 4;
+    if (titleText && titleText[0] && barEnd > titleX + 20) {
+        LcarsFont::drawTextUpper(*_spr, titleText,
+                                 titleX, TH / 2,
+                                 LCARS_FONT_SM, _theme->textOnBar,
+                                 _theme->barTop, ML_DATUM);
+    }
 }
 
 void LcarsEngine::setBacklight(uint8_t brightness) {

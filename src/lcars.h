@@ -20,3 +20,4 @@
 #include "lcars_engine.h"
 #include "lcars_widgets.h"
 #include "lcars_animation.h"
+#include "lcars_audio.h"

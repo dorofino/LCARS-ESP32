@@ -24,10 +24,10 @@
 #define LCARS_BAR_CAP_R     -1     // Pill cap radius (-1 = auto = height/2)
 
 // ── Content Area (computed from frame) ──────────────────────
-#define LCARS_CONTENT_X     (LCARS_SIDEBAR_W + LCARS_ELBOW_R + 4)
-#define LCARS_CONTENT_Y     (LCARS_TOPBAR_H + 12)
-#define LCARS_CONTENT_W     (SCR_WIDTH - LCARS_CONTENT_X - 4)
-#define LCARS_CONTENT_H     (SCR_HEIGHT - LCARS_CONTENT_Y - LCARS_BOTBAR_H - 4)
+#define LCARS_CONTENT_X     (LCARS_SIDEBAR_W + LCARS_ELBOW_R + LCARS_BAR_GAP + 1)
+#define LCARS_CONTENT_Y     (LCARS_TOPBAR_H + 4)
+#define LCARS_CONTENT_W     (SCR_WIDTH - LCARS_CONTENT_X - 2)
+#define LCARS_CONTENT_H     (SCR_HEIGHT - LCARS_TOPBAR_H - LCARS_BOTBAR_H - 6)
 
 // ── Animation Timing ────────────────────────────────────────
 #define LCARS_BOOT_DIAG_MS       2000   // Boot diagnostic text duration

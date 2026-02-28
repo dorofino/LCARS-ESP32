@@ -6,11 +6,11 @@
 
 static const LcarsTheme _themeTNG = {
     .name = "TNG CLASSIC",
-    .elbowTop      = LCARS_AMBER,
-    .elbowBottom   = LCARS_TAN,
+    .elbowTop      = LCARS_BUTTERSCOTCH,
+    .elbowBottom   = LCARS_LAVENDER,
     .barTop        = LCARS_AMBER,
     .barBottom     = LCARS_TAN,
-    .sidebar       = { LCARS_BUTTERSCOTCH, LCARS_LAVENDER, LCARS_PERIWINKLE, LCARS_VIOLET },
+    .sidebar       = { LCARS_PEACH, LCARS_LAVENDER, LCARS_TOMATO, LCARS_VIOLET },
     .sidebarCount  = 4,
     .text          = LCARS_SUNFLOWER,
     .textDim       = LCARS_TEXT_DIM,
@@ -70,10 +70,33 @@ static const LcarsTheme _themeRedAlert = {
     .background    = LCARS_BLACK,
 };
 
+static const LcarsTheme _themeLowerDecks = {
+    .name = "LOWER DECKS",
+    .elbowTop      = LCARS_LD_PURPLE,
+    .elbowBottom   = LCARS_LD_MAGENTA,
+    .barTop        = LCARS_LD_PURPLE,
+    .barBottom     = LCARS_LD_CORAL,
+    .sidebar       = { LCARS_LD_CYAN, LCARS_LD_MAGENTA, LCARS_LD_LAVENDER, LCARS_LD_TANGERINE },
+    .sidebarCount  = 4,
+    .text          = LCARS_WHITE,
+    .textDim       = LCARS_LD_LAVENDER,
+    .textOnBar     = LCARS_BLACK,
+    .accent        = LCARS_LD_CYAN,
+    .progressFg    = LCARS_LD_CYAN,
+    .progressBg    = LCARS_BAR_TRACK,
+    .gaugeColor    = LCARS_LD_CYAN,
+    .statusOk      = LCARS_LD_LIME,
+    .statusWarn    = LCARS_LD_TANGERINE,
+    .statusErr     = LCARS_LD_CORAL,
+    .alert         = LCARS_LD_MAGENTA,
+    .background    = LCARS_BLACK,
+};
+
 static const LcarsTheme* _themes[LCARS_THEME_COUNT] = {
     &_themeTNG,
     &_themeNemesis,
     &_themeRedAlert,
+    &_themeLowerDecks,
 };
 
 const LcarsTheme& LcarsThemes::get(LcarsThemeId id) {
@@ -81,6 +104,7 @@ const LcarsTheme& LcarsThemes::get(LcarsThemeId id) {
     return *_themes[id];
 }
 
-const LcarsTheme& LcarsThemes::tng()      { return _themeTNG; }
-const LcarsTheme& LcarsThemes::nemesis()   { return _themeNemesis; }
-const LcarsTheme& LcarsThemes::redAlert()  { return _themeRedAlert; }
+const LcarsTheme& LcarsThemes::tng()        { return _themeTNG; }
+const LcarsTheme& LcarsThemes::nemesis()     { return _themeNemesis; }
+const LcarsTheme& LcarsThemes::redAlert()    { return _themeRedAlert; }
+const LcarsTheme& LcarsThemes::lowerDecks()  { return _themeLowerDecks; }

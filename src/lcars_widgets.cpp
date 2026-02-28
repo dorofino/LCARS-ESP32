@@ -22,7 +22,7 @@ void LcarsWidgets::drawValueLabel(TFT_eSprite& spr, int16_t x, int16_t y,
                                    LcarsFontSize valueSize,
                                    LcarsFontSize labelSize) {
     LcarsFont::drawText(spr, value, x, y, valueSize, valueColor);
-    int16_t labelY = y + LcarsFont::getHeight(valueSize) + 2;
+    int16_t labelY = y + LcarsFont::getHeight(valueSize) + 6;
     LcarsFont::drawTextUpper(spr, label, x, labelY, labelSize, labelColor);
 }
 
