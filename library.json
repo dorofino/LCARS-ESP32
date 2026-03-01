@@ -20,6 +20,10 @@
         "bodmer/TFT_eSPI": "^2.5.0"
     },
     "build": {
-        "srcDir": "src"
+        "srcDir": "src",
+        "srcFilter": ["+<*>", "-<../examples/>"]
+    },
+    "export": {
+        "exclude": ["examples", "boards", "flash.ps1", ".gitignore"]
     }
 }
