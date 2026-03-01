@@ -80,22 +80,24 @@ LCARS is built from a small set of geometric primitives. Understanding these is 
 The **elbow** is the signature LCARS element — an L-shaped junction that connects a horizontal bar to a vertical sidebar with a smooth inner curve. It comes in four orientations:
 
 ```
-  Top-Left (TL)              Top-Right (TR)
-  ┌──────────────────╮       ╭──────────────────┐
-  │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│       │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-  │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│       │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-  │▓▓▓▓▓▓╭───               ───╮▓▓▓▓▓▓│
-  │▓▓▓▓▓▓│                     │▓▓▓▓▓▓│
-  │▓▓▓▓▓▓│                     │▓▓▓▓▓▓│
-    sidebar                     sidebar
+Top-Left (TL)                    Top-Right (TR)
 
-  Bottom-Left (BL)           Bottom-Right (BR)
-  │▓▓▓▓▓▓│                     │▓▓▓▓▓▓│
-  │▓▓▓▓▓▓│                     │▓▓▓▓▓▓│
-  │▓▓▓▓▓▓╰───               ───╯▓▓▓▓▓▓│
-  │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│       │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-  │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│       │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-  └──────────────────╯       ╰──────────────────┘
+ ┌──────────────────╮             ╭──────────────────┐
+ │████████████████████             ████████████████████│
+ │████████████████████             ████████████████████│
+ │██████╭─────                         ─────╮██████│
+ │██████│                                   │██████│
+ │██████│                                   │██████│
+ sidebar                                     sidebar
+
+Bottom-Left (BL)                 Bottom-Right (BR)
+
+ │██████│                                   │██████│
+ │██████│                                   │██████│
+ │██████╰─────                         ─────╯██████│
+ │████████████████████             ████████████████████│
+ │████████████████████             ████████████████████│
+ └──────────────────╯             ╰──────────────────┘
 ```
 
 **Elbow anatomy:**
@@ -113,14 +115,14 @@ Drawing smooth, gap-free elbows on embedded displays requires a specific techniq
 **Additive (CORRECT):** Draw a full anti-aliased circle at the junction point, then paint solid rectangles on top to cover three of the four quadrants. The exposed quarter has perfect AA edges because the circle was drawn against the true black background.
 
 ```
-Step 1: Draw full AA circle       Step 2: Cover 3 quadrants       Result: Clean elbow
-centered at junction point        with solid bar + sidebar rects
+Step 1: Full AA circle      Step 2: Cover 3 quadrants    Result: Clean elbow
+at junction point           with bar + sidebar rects
 
-       ╭────╮                     ████████████                     ████████████
-      ╱      ╲                    ████████████                     ████████████
-     │   ()   │                   ████████╭──                      ████████╭──
-      ╲      ╱                    ████████│                        ████████│
-       ╰────╯                     ████████│                        ████████│
+      ╭──────╮              ████████████████              ████████████████
+     ╱        ╲             ████████████████              ████████████████
+    │    ()    │            ████████╭─────               ████████╭─────
+     ╲        ╱             ████████│                     ████████│
+      ╰──────╯              ████████│                     ████████│
 ```
 
 Implementation (TL case from `lcars_frame.cpp`):
@@ -155,8 +157,9 @@ Horizontal bands that extend from elbows across the top and bottom of the frame.
 In a standard frame, bars have a flat left edge (connected to the elbow) and a pill cap on the right:
 
 ```
-│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓●●●●●│
-flat left                           pill cap right
+│████████████████████████████████████████●●●●●│
+ ^                                       ^
+ flat left                          pill cap right
 ```
 
 **Drawing technique:** Draw a full `fillSmoothRoundRect` (pill on both ends), then `fillRect` to square off the unwanted side:
@@ -176,17 +179,20 @@ if (!roundRight)
 A vertical column of colored segments between the top and bottom elbows. This is one of LCARS's most distinctive visual elements — the "stacked data blocks" on the left edge of a panel.
 
 ```
-│▓▓▓▓▓▓▓▓▓▓╮  ← segment 1, rounded right edge
-│▓▓▓▓▓▓▓▓▓▓│
-├──────────┤  ← 2px black gap
-│▓▓▓▓▓▓▓▓▓▓╮  ← segment 2
-│▓▓▓▓▓▓▓▓▓▓│
-├──────────┤  ← 2px black gap
-│▓▓▓▓▓▓▓▓▓▓╮  ← segment 3
-│▓▓▓▓▓▓▓▓▓▓│
-├──────────┤  ← 2px black gap
-│▓▓▓▓▓▓▓▓▓▓╮  ← segment 4
-│▓▓▓▓▓▓▓▓▓▓│
+│██████████╮    segment 1, rounded right edge
+│██████████│
+│          │    2px black gap
+│██████████╮    segment 2
+│██████████│
+│          │    2px black gap
+│██████████╮    segment 3
+│██████████│
+│          │    2px black gap
+│██████████╮    segment 4
+│██████████│
+ ^         ^
+ flat      rounded
+ left      right (4px r)
 ```
 
 **Properties:**
@@ -208,30 +214,32 @@ spr.fillRect(x, sy, 4, actualH, colors[i]);  // Flatten left edge
 The complete LCARS frame border that surrounds every screen:
 
 ```
-0                  34  50 53 54                               318 320
-│                  │   │  │  │                                 │   │
-├──────────────────┼───┼──┼──┼─────────────────────────────────┼───┤
-│                  │   │     │                                 │   │ 0
-│  TL ELBOW        │GAP│     TOP BAR (pill cap →)         ●●●●│   │
-│  (butterscotch)  │   │     (amber)                           │   │ 18
-├──────────────────┤   │     ┌─────────────────────────────────┤   │ 22
-│                  │   │     │                                 │   │
-│  SIDEBAR seg 1   │   │     │                                 │   │ 36
-│  (peach)         │   │     │                                 │   │
-├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤   │     │                                 │   │
-│  SIDEBAR seg 2   │   │     │     C O N T E N T              │   │
-│  (lavender)      │   │     │     A R E A                     │   │
-├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤   │     │                                 │   │
-│  SIDEBAR seg 3   │   │     │     264 × 130 px               │   │
-│  (tomato)        │   │     │     (320×170 display)           │   │
-├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤   │     │                                 │   │
-│  SIDEBAR seg 4   │   │     │                                 │   │
-│  (violet)        │   │     │                                 │   │
-├──────────────────┤   │     └─────────────────────────────────┤   │
-│                  │   │     │                                 │   │ H-32
-│  BL ELBOW        │GAP│     BOTTOM BAR (pill cap →)      ●●●●│   │
-│  (lavender)      │   │     (tan)                             │   │
-├──────────────────┼───┼──┼──┼─────────────────────────────────┼───┤ H
+ 0         34 50 54                                       320
+ │          │  │  │                                        │
+ ├──────────┼──┼──┼────────────────────────────────────────┤
+ │          │  :  │                                     ╮  │  y=0
+ │ TL ELBOW │gap  │ TOP BAR  (pill cap →)          ●●●●│  │
+ │          │  :  │                                     │  │  y=18
+ ├──────────┤  :  ├─────────────────────────────────────┘  │  y=22
+ │          │     │                                        │
+ │ SIDEBAR  │     │                                        │  y=36
+ │ seg 1    │     │                                        │
+ ├ ╌ ╌ ╌ ╌ ┤     │                                        │
+ │ SIDEBAR  │     │       C O N T E N T                    │
+ │ seg 2    │     │       A R E A                          │
+ ├ ╌ ╌ ╌ ╌ ┤     │                                        │
+ │ SIDEBAR  │     │       264 x 130 px                     │
+ │ seg 3    │     │       (on 320x170)                     │
+ ├ ╌ ╌ ╌ ╌ ┤     │                                        │
+ │ SIDEBAR  │     │                                        │
+ │ seg 4    │     │                                        │
+ ├──────────┤  :  ├─────────────────────────────────────╮  │  y=H-32
+ │          │  :  │                                     │  │
+ │ BL ELBOW │gap  │ BOTTOM BAR  (pill cap →)       ●●●●│  │
+ │          │  :  │                                     ╯  │  y=H
+ ├──────────┼──┼──┼────────────────────────────────────────┤
+ │          │  │  │                                        │
+ 0         34 50 54                                       320
 ```
 
 **Dimensions** (colors shown are TNG Classic theme):
@@ -565,23 +573,23 @@ Every frame follows this sequence:
 
 ```
 LcarsEngine::update()
-  │
-  ├─ Calculate delta time and FPS
-  │
-  ├─ [If transitioning] → _doTransition()
-  │   ├─ First half:  bars contract from old screen
-  │   ├─ Midpoint:    teardown old → setup new screen
-  │   ├─ Second half: bars extend to new screen
-  │   └─ pushSprite()
-  │
-  └─ [If steady-state] → _renderFrame()
-      ├─ Check refresh interval
-      ├─ screen->onUpdate(deltaMs)
-      ├─ Clear sprite to black
-      ├─ drawStandardFrame() → LCARS border
-      ├─ Draw screen title in top bar
-      ├─ screen->onDraw(spr, contentRect)
-      └─ pushSprite()
+ |
+ +-- Calculate delta time and FPS
+ |
+ +-- [If transitioning] --> _doTransition()
+ |    +-- First half:  bars contract from old screen
+ |    +-- Midpoint:    teardown old, setup new screen
+ |    +-- Second half: bars extend to new screen
+ |    +-- pushSprite()
+ |
+ +-- [If steady-state] --> _renderFrame()
+      +-- Check refresh interval
+      +-- screen->onUpdate(deltaMs)
+      +-- Clear sprite to black
+      +-- drawStandardFrame() --> LCARS border
+      +-- Draw screen title in top bar
+      +-- screen->onDraw(spr, contentRect)
+      +-- pushSprite()
 ```
 
 **Frame rate:** The engine targets 30 FPS (`LCARS_FPS_TARGET`). Actual timing is adaptive — it renders as fast as possible and tracks delta time for animations. The FPS counter updates every 1000ms.
@@ -924,15 +932,15 @@ void drawIndicator(TFT_eSprite& spr, int16_t x, int16_t y,
 Screens extend `LcarsScreen` and implement lifecycle hooks:
 
 ```
-  onSetup()                    Called once when screen becomes active
-     │
-     ├──→ onUpdate(deltaMs)    Called each frame for data/logic
-     │         │
-     │         └──→ onDraw()   Called each frame to render content
-     │                │
-     └────────────────┘        (repeats at refresh interval)
-     │
-  onTeardown()                 Called once when screen is replaced
+ onSetup()                      Called once when screen becomes active
+    |
+    +----> onUpdate(deltaMs)    Called each frame for data/logic
+    |          |
+    |          +----> onDraw()  Called each frame to render content
+    |                 |
+    +-----------------+         (repeats at refresh interval)
+    |
+ onTeardown()                   Called once when screen is replaced
 ```
 
 ### 11.2 Creating a Screen
