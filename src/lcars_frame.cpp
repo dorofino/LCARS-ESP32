@@ -11,56 +11,37 @@ void LcarsFrame::drawElbow(TFT_eSprite& spr, int16_t x, int16_t y,
     int16_t ew = sideW + innerR;  // Elbow total width
     int16_t eh = barH + innerR;   // Elbow total height
 
-    // Additive approach: draw bar rect + sidebar rect + colored arc
-    // This avoids holes from drawSmoothArc(ir=0) not filling to center
+    // Strategy: draw a smooth anti-aliased circle, then paint solid bar/sidebar
+    // rects on top to cover 3 quadrants. The exposed quarter has perfect AA edges.
+    int16_t d = innerR * 2;
 
     switch (pos) {
         case LCARS_ELBOW_TL: {
-            // ████████████  <- bar row (full width ew)
-            // ██████╲
-            // ██████ │     <- sidebar column (sideW)
             int16_t cx = x + sideW, cy = y + barH;
-            spr.fillRect(x, y, ew, barH, color);                    // Bar
-            spr.fillRect(x, cy, sideW, innerR, color);              // Sidebar
-            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
-            spr.drawSmoothArc(cx, cy, innerR, 0,
-                              270, 360, color, LCARS_BLACK, false);
+            spr.fillSmoothRoundRect(cx, cy, d, d, innerR, color, LCARS_BLACK);
+            spr.fillRect(x, y, ew, barH, color);               // Bar covers top
+            spr.fillRect(x, cy, sideW, innerR + 1, color);     // Sidebar covers left
             break;
         }
         case LCARS_ELBOW_TR: {
-            // ████████████  <- bar row
-            //       ╱██████
-            //      │ ██████  <- sidebar on right
             int16_t cx = x + innerR, cy = y + barH;
-            spr.fillRect(x, y, ew, barH, color);                    // Bar
-            spr.fillRect(cx, cy, sideW, innerR, color);             // Sidebar
-            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
-            spr.drawSmoothArc(cx, cy, innerR, 0,
-                              0, 90, color, LCARS_BLACK, false);
+            spr.fillSmoothRoundRect(cx - d, cy, d, d, innerR, color, LCARS_BLACK);
+            spr.fillRect(x, y, ew, barH, color);               // Bar covers top
+            spr.fillRect(cx, cy, sideW, innerR + 1, color);    // Sidebar covers right
             break;
         }
         case LCARS_ELBOW_BL: {
-            // ██████ │     <- sidebar on left
-            // ██████╱
-            // ████████████  <- bar row
             int16_t cx = x + sideW, cy = y + innerR;
-            spr.fillRect(x, y, sideW, innerR, color);               // Sidebar
-            spr.fillRect(x, cy, ew, barH, color);                   // Bar
-            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
-            spr.drawSmoothArc(cx, cy, innerR, 0,
-                              180, 270, color, LCARS_BLACK, false);
+            spr.fillSmoothRoundRect(cx, cy - d, d, d, innerR, color, LCARS_BLACK);
+            spr.fillRect(x, y, sideW, innerR + 1, color);      // Sidebar covers left
+            spr.fillRect(x, cy, ew, barH, color);               // Bar covers bottom
             break;
         }
         case LCARS_ELBOW_BR: {
-            //      │ ██████  <- sidebar on right
-            //       ╲██████
-            // ████████████  <- bar row
             int16_t cx = x + innerR, cy = y + innerR;
-            spr.fillRect(cx, y, sideW, innerR, color);              // Sidebar
-            spr.fillRect(x, cy, ew, barH, color);                   // Bar
-            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
-            spr.drawSmoothArc(cx, cy, innerR, 0,
-                              90, 180, color, LCARS_BLACK, false);
+            spr.fillSmoothRoundRect(cx - d, cy - d, d, d, innerR, color, LCARS_BLACK);
+            spr.fillRect(cx, y, sideW, innerR + 1, color);     // Sidebar covers right
+            spr.fillRect(x, cy, ew, barH, color);               // Bar covers bottom
             break;
         }
     }
