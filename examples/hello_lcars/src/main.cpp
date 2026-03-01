@@ -322,6 +322,623 @@ public:
 };
 
 // ============================================================
+// Quarters Screen — dual sidebar, elbows on all 4 corners
+// ============================================================
+
+class QuartersScreen : public LcarsScreen {
+public:
+    const char* title() const override { return "QUARTERS"; }
+    bool wantsFrame() const override { return false; }
+    uint32_t refreshIntervalMs() const override { return 100; }
+
+    void onDraw(TFT_eSprite& spr, const LcarsFrame::Rect& fullRect) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+
+        spr.fillSprite(_theme->background);
+
+        // ── 4 corner elbows ──
+        LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R,
+                              _theme->elbowTop, LCARS_ELBOW_TL);
+        LcarsFrame::drawElbow(spr, W - SW - R, 0, SW, TH, R,
+                              _theme->barTop, LCARS_ELBOW_TR);
+        LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R,
+                              _theme->elbowBottom, LCARS_ELBOW_BL);
+        LcarsFrame::drawElbow(spr, W - SW - R, H - BH - R, SW, BH, R,
+                              _theme->barBottom, LCARS_ELBOW_BR);
+
+        // ── Top bar (between elbows) ──
+        int16_t barLX = SW + R + GAP;
+        int16_t barRX = W - SW - R - GAP;
+        int16_t barW = barRX - barLX;
+        if (barW > 0) {
+            LcarsFrame::drawBar(spr, barLX, 0, barW, TH,
+                                _theme->barTop, LCARS_CAP_NONE, LCARS_CAP_NONE);
+        }
+
+        // ── Bottom bar (between elbows) ──
+        if (barW > 0) {
+            LcarsFrame::drawBar(spr, barLX, H - BH, barW, BH,
+                                _theme->barBottom, LCARS_CAP_NONE, LCARS_CAP_NONE);
+        }
+
+        // ── Left sidebar ──
+        int16_t sideTop = TH + R + 2;
+        int16_t sideBot = H - BH - R - 2;
+        int16_t sideH = sideBot - sideTop;
+        if (sideH > 0 && _theme->sidebarCount > 0) {
+            LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                    _theme->sidebar, _theme->sidebarCount, 2);
+        }
+
+        // ── Right sidebar (uses accent/different theme colors) ──
+        uint16_t rSidebar[] = {
+            _theme->accent, _theme->progressFg,
+            _theme->gaugeColor, _theme->statusOk
+        };
+        if (sideH > 0) {
+            LcarsFrame::drawSidebar(spr, W - SW, sideTop, SW, sideH,
+                                    rSidebar, 4, 2);
+        }
+
+        // ── Title on top bar ──
+        LcarsFont::drawTextUpper(spr, "QUARTERS",
+                                 barLX + 4, TH / 2,
+                                 LCARS_FONT_SM, _theme->textOnBar,
+                                 _theme->barTop, ML_DATUM);
+
+        // ── Content area ──
+        int16_t cx = SW + R + GAP + 1;
+        int16_t cy = TH + 4;
+        int16_t cw = W - 2 * (SW + R + GAP) - 2;
+        int16_t y = cy;
+
+        LcarsWidgets::drawLabel(spr, cx, y, "ENVIRONMENTAL", _theme->accent);
+        y += 14;
+
+        LcarsWidgets::drawStatusRow(spr, cx, y, cw, "TEMPERATURE", "22.4 C",
+                                    _theme->statusOk, _theme->textDim);
+        y += 18;
+        LcarsWidgets::drawProgressBar(spr, cx, y, cw, 6, 0.62f,
+                                      LCARS_ICE, LCARS_BAR_TRACK);
+        y += 7;
+
+        LcarsWidgets::drawStatusRow(spr, cx, y, cw, "HUMIDITY", "45%",
+                                    _theme->statusOk, _theme->textDim);
+        y += 18;
+        LcarsWidgets::drawProgressBar(spr, cx, y, cw, 6, 0.45f,
+                                      LCARS_VIOLET, LCARS_BAR_TRACK);
+        y += 7;
+
+        LcarsWidgets::drawStatusRow(spr, cx, y, cw, "LIGHTING", "70%",
+                                    _theme->statusOk, _theme->textDim);
+        y += 18;
+        LcarsWidgets::drawProgressBar(spr, cx, y, cw, 6, 0.70f,
+                                      LCARS_GOLD, LCARS_BAR_TRACK);
+        y += 7;
+
+        y += 4;
+        LcarsWidgets::drawSeparator(spr, cx, y, cw, _theme->textDim);
+        y += 5;
+
+        LcarsWidgets::drawStatusRow(spr, cx, y, cw, "REPLICATOR", "ONLINE",
+                                    _theme->statusOk, _theme->textDim);
+        y += 15;
+        LcarsWidgets::drawStatusRow(spr, cx, y, cw, "COMM PANEL", "STANDBY",
+                                    _theme->statusWarn, _theme->textDim);
+    }
+
+    void onDrawTransition(TFT_eSprite& spr, float t) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+
+        // Phase 1 (t = 0.0 – 0.2): All 4 elbows appear with power-on glow
+        if (t > 0.0f) {
+            float glowT = (t < 0.2f) ? (1.0f - t / 0.2f) : 0.0f;
+            uint8_t glow = (uint8_t)(glowT * 90);
+
+            uint16_t tlC = spr.alphaBlend(255 - glow, _theme->elbowTop, TFT_WHITE);
+            uint16_t trC = spr.alphaBlend(255 - glow, _theme->barTop, TFT_WHITE);
+            uint16_t blC = spr.alphaBlend(255 - glow, _theme->elbowBottom, TFT_WHITE);
+            uint16_t brC = spr.alphaBlend(255 - glow, _theme->barBottom, TFT_WHITE);
+
+            LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R, tlC, LCARS_ELBOW_TL);
+            LcarsFrame::drawElbow(spr, W - SW - R, 0, SW, TH, R, trC, LCARS_ELBOW_TR);
+            LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R, blC, LCARS_ELBOW_BL);
+            LcarsFrame::drawElbow(spr, W - SW - R, H - BH - R, SW, BH, R, brC, LCARS_ELBOW_BR);
+        }
+
+        // Phase 2 (t = 0.2 – 0.6): Bars grow inward from both sides toward center
+        if (t > 0.2f) {
+            float barT = (t - 0.2f) / 0.4f;
+            if (barT > 1.0f) barT = 1.0f;
+            barT = LcarsEasing::easeOutCubic(barT);
+
+            int16_t barLX = SW + R + GAP;
+            int16_t barRX = W - SW - R - GAP;
+            int16_t fullBarW = barRX - barLX;
+            int16_t halfBar = fullBarW / 2;
+
+            // Left half grows right from TL elbow
+            int16_t leftEnd = barLX + (int16_t)(halfBar * barT);
+            if (leftEnd > barLX) {
+                LcarsFrame::drawBarPartial(spr, barLX, leftEnd, 0, TH,
+                                           _theme->barTop, LCARS_CAP_NONE);
+                LcarsFrame::drawBarPartial(spr, barLX, leftEnd, H - BH, BH,
+                                           _theme->barBottom, LCARS_CAP_NONE);
+            }
+            // Right half grows left from TR elbow
+            int16_t rightStart = barRX - (int16_t)(halfBar * barT);
+            if (rightStart < barRX) {
+                LcarsFrame::drawBarPartial(spr, rightStart, barRX, 0, TH,
+                                           _theme->barTop, LCARS_CAP_NONE);
+                LcarsFrame::drawBarPartial(spr, rightStart, barRX, H - BH, BH,
+                                           _theme->barBottom, LCARS_CAP_NONE);
+            }
+        }
+
+        // Phase 3 (t = 0.6 – 1.0): Both sidebars fill in segment by segment
+        if (t > 0.6f) {
+            float sideT = (t - 0.6f) / 0.4f;
+            if (sideT > 1.0f) sideT = 1.0f;
+
+            int16_t sideTop = TH + R + 2;
+            int16_t sideH = H - TH - BH - 2 * R - 4;
+
+            if (sideH > 0) {
+                // Left sidebar
+                if (_theme->sidebarCount > 0) {
+                    int showSegs = (int)(sideT * _theme->sidebarCount) + 1;
+                    if (showSegs > _theme->sidebarCount) showSegs = _theme->sidebarCount;
+                    LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                            _theme->sidebar, showSegs, 2);
+                }
+                // Right sidebar
+                uint16_t rSidebar[] = {
+                    _theme->accent, _theme->progressFg,
+                    _theme->gaugeColor, _theme->statusOk
+                };
+                int showR = (int)(sideT * 4) + 1;
+                if (showR > 4) showR = 4;
+                LcarsFrame::drawSidebar(spr, W - SW, sideTop, SW, sideH,
+                                        rSidebar, showR, 2);
+            }
+        }
+    }
+};
+
+// ============================================================
+// Split Panel Screen — mid-bar divider, upper/lower zones
+// ============================================================
+
+class SplitPanelScreen : public LcarsScreen {
+public:
+    const char* title() const override { return "SHIP MAP"; }
+    bool wantsFrame() const override { return false; }
+    uint32_t refreshIntervalMs() const override { return 80; }
+
+    void onDraw(TFT_eSprite& spr, const LcarsFrame::Rect& fullRect) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+        const int16_t MID_H = 12;  // Mid-bar height (thinner than top/bottom)
+
+        spr.fillSprite(_theme->background);
+
+        // ── Top-left elbow + top bar ──
+        LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R,
+                              _theme->elbowTop, LCARS_ELBOW_TL);
+        int16_t barX = SW + R + GAP;
+        LcarsFrame::drawBar(spr, barX, 0, W - barX, TH,
+                            _theme->barTop, LCARS_CAP_NONE, LCARS_CAP_PILL);
+
+        // ── Bottom-left elbow + bottom bar ──
+        LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R,
+                              _theme->elbowBottom, LCARS_ELBOW_BL);
+        LcarsFrame::drawBar(spr, barX, H - BH, W - barX, BH,
+                            _theme->barBottom, LCARS_CAP_NONE, LCARS_CAP_PILL);
+
+        // ── Mid-height divider bar ──
+        int16_t midY = H / 2 - MID_H / 2;
+        LcarsFrame::drawBar(spr, barX, midY, W - barX, MID_H,
+                            _theme->accent, LCARS_CAP_NONE, LCARS_CAP_PILL);
+
+        // ── Left sidebar (full height, continuous) ──
+        int16_t sideTop = TH + R + 2;
+        int16_t sideBot = H - BH - R - 2;
+        int16_t sideH = sideBot - sideTop;
+        if (sideH > 0 && _theme->sidebarCount > 0) {
+            LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                    _theme->sidebar, _theme->sidebarCount, 2);
+        }
+
+        // ── Title on top bar ──
+        LcarsFont::drawTextUpper(spr, "SHIP MAP",
+                                 barX + 4, TH / 2,
+                                 LCARS_FONT_SM, _theme->textOnBar,
+                                 _theme->barTop, ML_DATUM);
+
+        // ── Upper content zone ──
+        int16_t cx = barX + 1;
+        int16_t cw = W - barX - 3;
+        int16_t uy = TH + 4;
+
+        LcarsWidgets::drawLabel(spr, cx, uy, "PRIMARY SYSTEMS", _theme->accent);
+        uy += 14;
+
+        LcarsWidgets::drawStatusRow(spr, cx, uy, cw, "WARP DRIVE", "ONLINE",
+                                    _theme->statusOk, _theme->textDim);
+        uy += 15;
+        LcarsWidgets::drawStatusRow(spr, cx, uy, cw, "IMPULSE", "ACTIVE",
+                                    _theme->statusOk, _theme->textDim);
+        uy += 15;
+        LcarsWidgets::drawStatusRow(spr, cx, uy, cw, "NAVIGATION", "NOMINAL",
+                                    _theme->statusOk, _theme->textDim);
+
+        // ── Lower content zone ──
+        int16_t ly = midY + MID_H + 4;
+
+        LcarsWidgets::drawLabel(spr, cx, ly, "SENSOR LOG", _theme->accent);
+        ly += 14;
+
+        int16_t cascadeH = (H - BH) - ly - 2;
+        if (cascadeH > 8) {
+            LcarsWidgets::drawDataCascade(spr, cx, ly, cw, cascadeH,
+                                          _theme->accent, 77);
+        }
+    }
+
+    void onDrawTransition(TFT_eSprite& spr, float t) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+        const int16_t MID_H = 12;
+        const int16_t barX = SW + R + GAP;
+
+        // Phase 1 (t = 0.0 – 0.2): Elbows appear with power-on glow
+        if (t > 0.0f) {
+            float glowT = (t < 0.2f) ? (1.0f - t / 0.2f) : 0.0f;
+            uint8_t glow = (uint8_t)(glowT * 90);
+            uint16_t topC = spr.alphaBlend(255 - glow, _theme->elbowTop, TFT_WHITE);
+            uint16_t botC = spr.alphaBlend(255 - glow, _theme->elbowBottom, TFT_WHITE);
+
+            LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R, topC, LCARS_ELBOW_TL);
+            LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R, botC, LCARS_ELBOW_BL);
+        }
+
+        // Phase 2 (t = 0.2 – 0.5): Top + bottom bars extend
+        if (t > 0.2f) {
+            float barT = (t - 0.2f) / 0.3f;
+            if (barT > 1.0f) barT = 1.0f;
+            barT = LcarsEasing::easeOutCubic(barT);
+
+            int16_t barEnd = barX + (int16_t)((W - barX) * barT);
+            if (barEnd > barX) {
+                LcarsFrame::drawBarPartial(spr, barX, barEnd, 0, TH,
+                                           _theme->barTop, LCARS_CAP_PILL);
+                LcarsFrame::drawBarPartial(spr, barX, barEnd, H - BH, BH,
+                                           _theme->barBottom, LCARS_CAP_PILL);
+            }
+        }
+
+        // Phase 2b (t = 0.5 – 0.7): Mid-bar extends (starts AFTER main bars)
+        if (t > 0.5f) {
+            float midT = (t - 0.5f) / 0.2f;
+            if (midT > 1.0f) midT = 1.0f;
+            midT = LcarsEasing::easeOutCubic(midT);
+
+            int16_t midY = H / 2 - MID_H / 2;
+            int16_t midEnd = barX + (int16_t)((W - barX) * midT);
+            if (midEnd > barX) {
+                LcarsFrame::drawBarPartial(spr, barX, midEnd, midY, MID_H,
+                                           _theme->accent, LCARS_CAP_PILL);
+            }
+        }
+
+        // Phase 3 (t = 0.7 – 1.0): Sidebar segments fill in
+        if (t > 0.7f) {
+            float sideT = (t - 0.7f) / 0.3f;
+            if (sideT > 1.0f) sideT = 1.0f;
+
+            int16_t sideTop = TH + R + 2;
+            int16_t sideH = H - TH - BH - 2 * R - 4;
+            if (sideH > 0 && _theme->sidebarCount > 0) {
+                int showSegs = (int)(sideT * _theme->sidebarCount) + 1;
+                if (showSegs > _theme->sidebarCount) showSegs = _theme->sidebarCount;
+                LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                        _theme->sidebar, showSegs, 2);
+            }
+        }
+    }
+};
+
+// ============================================================
+// Medical Screen — split dual frames side by side
+// ============================================================
+
+class MedicalScreen : public LcarsScreen {
+public:
+    const char* title() const override { return "SICKBAY"; }
+    bool wantsFrame() const override { return false; }
+    uint32_t refreshIntervalMs() const override { return 80; }
+
+    void onDraw(TFT_eSprite& spr, const LcarsFrame::Rect& fullRect) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+        const int16_t SPLIT_GAP = 6;  // Gap between left and right frames
+
+        spr.fillSprite(_theme->background);
+
+        // Calculate split point
+        int16_t splitX = W / 2;
+        int16_t leftW = splitX - SPLIT_GAP / 2;
+        int16_t rightX = splitX + SPLIT_GAP / 2;
+        int16_t rightW = W - rightX;
+
+        // ═══════════ LEFT FRAME ═══════════
+
+        // Left TL elbow
+        LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R,
+                              _theme->elbowTop, LCARS_ELBOW_TL);
+        // Left top bar (pill cap on right end)
+        int16_t lBarX = SW + R + GAP;
+        int16_t lBarW = leftW - lBarX;
+        if (lBarW > 0) {
+            LcarsFrame::drawBar(spr, lBarX, 0, lBarW, TH,
+                                _theme->barTop, LCARS_CAP_NONE, LCARS_CAP_PILL);
+        }
+
+        // Left BL elbow
+        LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R,
+                              _theme->elbowBottom, LCARS_ELBOW_BL);
+        // Left bottom bar
+        if (lBarW > 0) {
+            LcarsFrame::drawBar(spr, lBarX, H - BH, lBarW, BH,
+                                _theme->barBottom, LCARS_CAP_NONE, LCARS_CAP_PILL);
+        }
+
+        // Left sidebar
+        int16_t sideTop = TH + R + 2;
+        int16_t sideBot = H - BH - R - 2;
+        int16_t sideH = sideBot - sideTop;
+        if (sideH > 0 && _theme->sidebarCount > 0) {
+            LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                    _theme->sidebar, _theme->sidebarCount, 2);
+        }
+
+        // Left title
+        LcarsFont::drawTextUpper(spr, "VITALS",
+                                 lBarX + 4, TH / 2,
+                                 LCARS_FONT_SM, _theme->textOnBar,
+                                 _theme->barTop, ML_DATUM);
+
+        // ═══════════ RIGHT FRAME ═══════════
+
+        // Right TR elbow
+        LcarsFrame::drawElbow(spr, W - SW - R, 0, SW, TH, R,
+                              _theme->accent, LCARS_ELBOW_TR);
+        // Right top bar (pill cap on left end)
+        int16_t rBarX = rightX;
+        int16_t rBarW = W - SW - R - GAP - rBarX;
+        if (rBarW > 0) {
+            LcarsFrame::drawBar(spr, rBarX, 0, rBarW, TH,
+                                _theme->accent, LCARS_CAP_PILL, LCARS_CAP_NONE);
+        }
+
+        // Right BR elbow
+        LcarsFrame::drawElbow(spr, W - SW - R, H - BH - R, SW, BH, R,
+                              _theme->gaugeColor, LCARS_ELBOW_BR);
+        // Right bottom bar
+        if (rBarW > 0) {
+            LcarsFrame::drawBar(spr, rBarX, H - BH, rBarW, BH,
+                                _theme->gaugeColor, LCARS_CAP_PILL, LCARS_CAP_NONE);
+        }
+
+        // Right sidebar
+        uint16_t rSidebar[] = {
+            _theme->accent, _theme->gaugeColor,
+            _theme->progressFg, _theme->statusOk
+        };
+        if (sideH > 0) {
+            LcarsFrame::drawSidebar(spr, W - SW, sideTop, SW, sideH,
+                                    rSidebar, 4, 2);
+        }
+
+        // Right title
+        if (rBarW > 0) {
+            LcarsFont::drawTextUpper(spr, "MEDICAL",
+                                     rBarX + TH / 2 + 4, TH / 2,
+                                     LCARS_FONT_SM, _theme->textOnBar,
+                                     _theme->accent, ML_DATUM);
+        }
+
+        // ═══════════ LEFT CONTENT (Vitals) ═══════════
+        int16_t lcx = lBarX + 1;
+        int16_t lcw = lBarW - 3;
+        int16_t ly = TH + 4;
+
+        // Heart rate — animated
+        char hrBuf[8];
+        int hr = 72 + (millis() / 400) % 8;
+        snprintf(hrBuf, sizeof(hrBuf), "%d", hr);
+        LcarsWidgets::drawValueLabel(spr, lcx, ly, hrBuf, "HEART BPM",
+                                     LCARS_GREEN, _theme->textDim,
+                                     LCARS_FONT_LG, LCARS_FONT_SM);
+        ly += 46;
+
+        LcarsWidgets::drawStatusRow(spr, lcx, ly, lcw, "O2 SAT", "98%",
+                                    _theme->statusOk, _theme->textDim);
+        ly += 18;
+        LcarsWidgets::drawProgressBar(spr, lcx, ly, lcw, 5, 0.98f,
+                                      LCARS_GREEN, LCARS_BAR_TRACK);
+        ly += 7;
+
+        LcarsWidgets::drawStatusRow(spr, lcx, ly, lcw, "BP", "120/80",
+                                    _theme->statusOk, _theme->textDim);
+        ly += 18;
+        LcarsWidgets::drawProgressBar(spr, lcx, ly, lcw, 5, 0.75f,
+                                      LCARS_ICE, LCARS_BAR_TRACK);
+
+        // ═══════════ RIGHT CONTENT (Medical) ═══════════
+        int16_t rcx = rBarX + TH / 2 + 1;
+        int16_t rcw = rBarW - TH / 2 - 3;
+        int16_t ry = TH + 4;
+
+        LcarsWidgets::drawLabel(spr, rcx, ry, "BIOBED 1", _theme->accent);
+        ry += 14;
+
+        LcarsWidgets::drawStatusRow(spr, rcx, ry, rcw, "NEURAL", "NORMAL",
+                                    _theme->statusOk, _theme->textDim);
+        ry += 15;
+        LcarsWidgets::drawStatusRow(spr, rcx, ry, rcw, "CORTISOL", "LOW",
+                                    _theme->statusWarn, _theme->textDim);
+        ry += 15;
+        LcarsWidgets::drawStatusRow(spr, rcx, ry, rcw, "INAPROVALINE", "2CC",
+                                    _theme->statusOk, _theme->textDim);
+        ry += 17;
+
+        LcarsWidgets::drawSeparator(spr, rcx, ry, rcw, _theme->textDim);
+        ry += 5;
+
+        int16_t cascadeH = (H - BH) - ry - 2;
+        if (cascadeH > 8) {
+            LcarsWidgets::drawDataCascade(spr, rcx, ry, rcw, cascadeH,
+                                          _theme->accent, 33);
+        }
+    }
+
+    void onDrawTransition(TFT_eSprite& spr, float t) override {
+        const int16_t W = SCR_WIDTH;
+        const int16_t H = SCR_HEIGHT;
+        const int16_t SW = LCARS_SIDEBAR_W;
+        const int16_t R  = LCARS_ELBOW_R;
+        const int16_t TH = LCARS_TOPBAR_H;
+        const int16_t BH = LCARS_BOTBAR_H;
+        const int16_t GAP = LCARS_BAR_GAP;
+        const int16_t SPLIT_GAP = 6;
+
+        int16_t splitX = W / 2;
+        int16_t leftW = splitX - SPLIT_GAP / 2;
+        int16_t rightX = splitX + SPLIT_GAP / 2;
+        int16_t lBarX = SW + R + GAP;
+        int16_t lBarW = leftW - lBarX;
+        int16_t rBarW = W - SW - R - GAP - rightX;
+        int16_t sideTop = TH + R + 2;
+        int16_t sideH = H - TH - BH - 2 * R - 4;
+
+        // ═══ LEFT FRAME (t = 0.0 – 0.5) ═══
+
+        // Phase 1 (t = 0.0 – 0.1): Left elbows appear with power-on glow
+        if (t > 0.0f) {
+            float glowT = (t < 0.1f) ? (1.0f - t / 0.1f) : 0.0f;
+            uint8_t glow = (uint8_t)(glowT * 90);
+            uint16_t topC = spr.alphaBlend(255 - glow, _theme->elbowTop, TFT_WHITE);
+            uint16_t botC = spr.alphaBlend(255 - glow, _theme->elbowBottom, TFT_WHITE);
+
+            LcarsFrame::drawElbow(spr, 0, 0, SW, TH, R, topC, LCARS_ELBOW_TL);
+            LcarsFrame::drawElbow(spr, 0, H - BH - R, SW, BH, R, botC, LCARS_ELBOW_BL);
+        }
+
+        // Phase 2 (t = 0.1 – 0.3): Left bars extend
+        if (t > 0.1f) {
+            float lBarT = (t - 0.1f) / 0.2f;
+            if (lBarT > 1.0f) lBarT = 1.0f;
+            lBarT = LcarsEasing::easeOutCubic(lBarT);
+
+            if (lBarW > 0) {
+                int16_t lEnd = lBarX + (int16_t)(lBarW * lBarT);
+                LcarsFrame::drawBarPartial(spr, lBarX, lEnd, 0, TH,
+                                           _theme->barTop, LCARS_CAP_PILL);
+                LcarsFrame::drawBarPartial(spr, lBarX, lEnd, H - BH, BH,
+                                           _theme->barBottom, LCARS_CAP_PILL);
+            }
+        }
+
+        // Phase 3 (t = 0.3 – 0.5): Left sidebar fills
+        if (t > 0.3f) {
+            float lSideT = (t - 0.3f) / 0.2f;
+            if (lSideT > 1.0f) lSideT = 1.0f;
+
+            if (sideH > 0 && _theme->sidebarCount > 0) {
+                int showSegs = (int)(lSideT * _theme->sidebarCount) + 1;
+                if (showSegs > _theme->sidebarCount) showSegs = _theme->sidebarCount;
+                LcarsFrame::drawSidebar(spr, 0, sideTop, SW, sideH,
+                                        _theme->sidebar, showSegs, 2);
+            }
+        }
+
+        // ═══ RIGHT FRAME (t = 0.5 – 1.0) ═══
+
+        // Phase 4 (t = 0.5 – 0.6): Right elbows appear with power-on glow
+        if (t > 0.5f) {
+            float rGlowT = (t < 0.6f) ? (1.0f - (t - 0.5f) / 0.1f) : 0.0f;
+            uint8_t rGlow = (uint8_t)(rGlowT * 90);
+            uint16_t trC = spr.alphaBlend(255 - rGlow, _theme->accent, TFT_WHITE);
+            uint16_t brC = spr.alphaBlend(255 - rGlow, _theme->gaugeColor, TFT_WHITE);
+
+            LcarsFrame::drawElbow(spr, W - SW - R, 0, SW, TH, R, trC, LCARS_ELBOW_TR);
+            LcarsFrame::drawElbow(spr, W - SW - R, H - BH - R, SW, BH, R, brC, LCARS_ELBOW_BR);
+        }
+
+        // Phase 5 (t = 0.6 – 0.8): Right bars extend (grows leftward)
+        if (t > 0.6f) {
+            float rBarT = (t - 0.6f) / 0.2f;
+            if (rBarT > 1.0f) rBarT = 1.0f;
+            rBarT = LcarsEasing::easeOutCubic(rBarT);
+
+            if (rBarW > 0) {
+                int16_t rStart = (rightX + rBarW) - (int16_t)(rBarW * rBarT);
+                int16_t rEnd = rightX + rBarW;
+                LcarsFrame::drawBarPartial(spr, rStart, rEnd, 0, TH,
+                                           _theme->accent, LCARS_CAP_PILL);
+                LcarsFrame::drawBarPartial(spr, rStart, rEnd, H - BH, BH,
+                                           _theme->gaugeColor, LCARS_CAP_PILL);
+            }
+        }
+
+        // Phase 6 (t = 0.8 – 1.0): Right sidebar fills
+        if (t > 0.8f) {
+            float rSideT = (t - 0.8f) / 0.2f;
+            if (rSideT > 1.0f) rSideT = 1.0f;
+
+            if (sideH > 0) {
+                uint16_t rSidebar[] = {
+                    _theme->accent, _theme->gaugeColor,
+                    _theme->progressFg, _theme->statusOk
+                };
+                int showR = (int)(rSideT * 4) + 1;
+                if (showR > 4) showR = 4;
+                LcarsFrame::drawSidebar(spr, W - SW, sideTop, SW, sideH,
+                                        rSidebar, showR, 2);
+            }
+        }
+    }
+};
+
+// ============================================================
 // Global screen instances
 // ============================================================
 
@@ -330,9 +947,15 @@ DashboardScreen   dashScreen;
 StatusScreen      statusScreen;
 TacticalScreen    tacticalScreen;
 EngineeringScreen engineeringScreen;
+QuartersScreen    quartersScreen;
+SplitPanelScreen  splitPanelScreen;
+MedicalScreen     medicalScreen;
 
-LcarsScreen* screens[] = { &dashScreen, &statusScreen, &tacticalScreen, &engineeringScreen };
-const uint8_t SCREEN_COUNT = 4;
+LcarsScreen* screens[] = {
+    &dashScreen, &statusScreen, &tacticalScreen, &engineeringScreen,
+    &quartersScreen, &splitPanelScreen, &medicalScreen
+};
+const uint8_t SCREEN_COUNT = 7;
 uint32_t screenSwitchMs = 0;
 uint8_t  currentScreenIdx = 0;
 

@@ -32,7 +32,7 @@
 // ── Animation Timing ────────────────────────────────────────
 #define LCARS_BOOT_DIAG_MS       2000   // Boot diagnostic text duration
 #define LCARS_BOOT_FRAME_MS      600    // Frame assembly animation duration
-#define LCARS_TRANSITION_MS      300    // Screen transition total duration
+#define LCARS_TRANSITION_MS      2400   // Screen transition total duration (2 × 1200ms halves)
 #define LCARS_BLINK_INTERVAL_MS  500    // Indicator blink rate
 #define LCARS_CASCADE_SPEED_MS   50     // Data cascade update interval
 #define LCARS_FPS_TARGET         30     // Target frames per second

@@ -59,4 +59,5 @@ namespace LcarsEasing {
     float easeOutQuad(float t);
     float easeInOutQuad(float t);
     float easeOutCubic(float t);
+    float easeOutBack(float t);    // Overshoot then settle — "lock into place"
 }

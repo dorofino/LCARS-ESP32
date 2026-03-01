@@ -25,6 +25,11 @@ public:
     // The LCARS frame is drawn before this call; draw content inside the frame.
     virtual void onDraw(TFT_eSprite& spr, const LcarsFrame::Rect& content) = 0;
 
+    // Called during screen transitions to draw the frame assembling/disassembling.
+    // t ranges from 0.0 (nothing visible) to 1.0 (fully assembled).
+    // Override for custom frame layouts; default draws the standard left-side frame.
+    virtual void onDrawTransition(TFT_eSprite& spr, float t);
+
     // Called once when screen is about to be replaced
     virtual void onTeardown() {}
 

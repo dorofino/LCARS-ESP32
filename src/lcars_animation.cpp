@@ -198,3 +198,10 @@ float LcarsEasing::easeOutCubic(float t) {
     float f = t - 1.0f;
     return f * f * f + 1.0f;
 }
+
+float LcarsEasing::easeOutBack(float t) {
+    // Overshoot constant ~1.05 (subtle, inspired by RITOS d3.easeBackInOut)
+    const float s = 1.05f;
+    float f = t - 1.0f;
+    return f * f * ((s + 1.0f) * f + s) + 1.0f;
+}

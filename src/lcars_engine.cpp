@@ -96,21 +96,28 @@ void LcarsEngine::update() {
 
 void LcarsEngine::_doTransition() {
     uint32_t elapsed = millis() - _transStartMs;
-    uint32_t halfDuration = LCARS_TRANSITION_MS / 2;
 
-    if (elapsed < halfDuration) {
-        float t = (float)elapsed / halfDuration;
+    // Three-phase transition: disassemble → black pause → assemble
+    const uint32_t PAUSE_MS = 150;  // Brief dramatic black pause at midpoint
+    uint32_t phaseDur = (LCARS_TRANSITION_MS - PAUSE_MS) / 2;
+    uint32_t phase2Start = phaseDur;
+    uint32_t phase3Start = phaseDur + PAUSE_MS;
+    uint32_t totalDur = phase3Start + phaseDur;
+
+    if (elapsed < phase2Start) {
+        // Phase 1: old screen's frame disassembles (t goes 1.0 → 0.0)
+        float t = (float)elapsed / phaseDur;
 
         _spr->fillSprite(_theme->background);
-
-        if (_screen && _screen->wantsFrame()) {
-            _drawTransitionFrame(1.0f - t, _screen);
+        if (_screen) {
+            _screen->onDrawTransition(*_spr, 1.0f - t);
         }
+        _drawVignette();
         _spr->pushSprite(0, 0);
 
-    } else if (elapsed < LCARS_TRANSITION_MS) {
-        float t = (float)(elapsed - halfDuration) / halfDuration;
-
+    } else if (elapsed < phase3Start) {
+        // Phase 2: Brief black pause — dramatic "reset" moment
+        // Swap screens during this pause
         if (_screen && _nextScreen && _screen != _nextScreen) {
             _screen->onTeardown();
             _screen = _nextScreen;
@@ -120,10 +127,27 @@ void LcarsEngine::_doTransition() {
         }
 
         _spr->fillSprite(_theme->background);
+        _drawVignette();
+        _spr->pushSprite(0, 0);
 
-        if (_screen && _screen->wantsFrame()) {
-            _drawTransitionFrame(t, _screen);
+    } else if (elapsed < totalDur) {
+        // Phase 3: new screen's frame assembles (t goes 0.0 → 1.0)
+        float t = (float)(elapsed - phase3Start) / phaseDur;
+
+        // Ensure screen swap happened (in case phase 2 was skipped)
+        if (_nextScreen && _screen != _nextScreen) {
+            if (_screen) _screen->onTeardown();
+            _screen = _nextScreen;
+            _screen->_theme = _theme;
+            _screen->onSetup();
+            _nextScreen = nullptr;
         }
+
+        _spr->fillSprite(_theme->background);
+        if (_screen) {
+            _screen->onDrawTransition(*_spr, t);
+        }
+        _drawVignette();
         _spr->pushSprite(0, 0);
 
     } else {
@@ -162,42 +186,40 @@ void LcarsEngine::_renderFrame() {
         _screen->onDraw(*_spr, full);
     }
 
+    _drawVignette();
     _spr->pushSprite(0, 0);
 }
 
-void LcarsEngine::_drawTransitionFrame(float t, LcarsScreen* screen) {
-    const int16_t SW = LCARS_SIDEBAR_W;
-    const int16_t R  = LCARS_ELBOW_R;
-    const int16_t TH = LCARS_TOPBAR_H;
-    const int16_t BH = LCARS_BOTBAR_H;
-    const int16_t GAP = LCARS_BAR_GAP;
-    const int16_t barX = SW + R + GAP;
+void LcarsEngine::_drawVignette() {
+    if (!_spr) return;
 
-    LcarsFrame::drawElbow(*_spr, 0, 0, SW, TH, R, _theme->elbowTop, LCARS_ELBOW_TL);
-    LcarsFrame::drawElbow(*_spr, 0, _height - BH - R, SW, BH, R,
-                          _theme->elbowBottom, LCARS_ELBOW_BL);
+    // Subtle screen-edge darkening — only on top and right edges where
+    // no LCARS frame elements live. Left edge has the sidebar, bottom
+    // has the bar, so skip those to keep the frame crisp.
+    // 4 strips with cubic falloff — very gentle.
+    const int DEPTH = 4;
 
-    int16_t sideTop = TH + R + 2;
-    int16_t sideH = _height - TH - BH - 2 * R - 4;
-    if (sideH > 0) {
-        LcarsFrame::drawSidebar(*_spr, 0, sideTop, SW, sideH,
-                                _theme->sidebar, _theme->sidebarCount, 2);
-    }
+    for (int s = 0; s < DEPTH; s++) {
+        float norm = (float)(DEPTH - s) / DEPTH;  // 1.0 at edge → 0.0 inner
+        uint8_t a = (uint8_t)(255 - 100 * norm * norm * norm);  // 155→255
 
-    int16_t barEnd = barX + (int16_t)((_width - barX) * t);
-    LcarsFrame::drawBarPartial(*_spr, barX, barEnd, 0, TH,
-                               _theme->barTop, LCARS_CAP_PILL);
-    LcarsFrame::drawBarPartial(*_spr, barX, barEnd, _height - BH, BH,
-                               _theme->barBottom, LCARS_CAP_PILL);
-
-    // Draw title on the extending bar (only when bar is long enough)
-    const char* titleText = screen ? screen->title() : nullptr;
-    int16_t titleX = barX + 4;
-    if (titleText && titleText[0] && barEnd > titleX + 20) {
-        LcarsFont::drawTextUpper(*_spr, titleText,
-                                 titleX, TH / 2,
-                                 LCARS_FONT_SM, _theme->textOnBar,
-                                 _theme->barTop, ML_DATUM);
+        // Top edge (full width)
+        for (int16_t x = 0; x < _width; x++) {
+            uint16_t px = _spr->readPixel(x, s);
+            if (px != 0) _spr->drawPixel(x, s, _spr->alphaBlend(a, px, TFT_BLACK));
+        }
+        // Bottom edge (full width)
+        for (int16_t x = 0; x < _width; x++) {
+            int16_t y = _height - 1 - s;
+            uint16_t px = _spr->readPixel(x, y);
+            if (px != 0) _spr->drawPixel(x, y, _spr->alphaBlend(a, px, TFT_BLACK));
+        }
+        // Right edge only (left has sidebar — leave it clean)
+        int16_t rx = _width - 1 - s;
+        for (int16_t y = DEPTH; y < _height - DEPTH; y++) {
+            uint16_t px = _spr->readPixel(rx, y);
+            if (px != 0) _spr->drawPixel(rx, y, _spr->alphaBlend(a, px, TFT_BLACK));
+        }
     }
 }
 

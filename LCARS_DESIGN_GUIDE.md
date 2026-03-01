@@ -716,13 +716,25 @@ The overall progress uses `easeOutCubic` — fast start, smooth deceleration —
 
 Total duration: `LCARS_TRANSITION_MS = 300ms`
 
-The transition is split into two halves:
+The transition uses a **staggered reveal** pattern — frame elements appear sequentially, not all at once. This matches the consensus approach from modern LCARS recreation projects (LCARS-47, Project RITOS, cb-lcars) and follows the principle of building **outward from the elbows**.
 
-1. **First half (0-150ms):** Current screen's bars contract inward (bar length × (1 - t))
+**Two-half structure:**
+
+1. **First half (0-150ms):** Current screen's frame contracts — bars shrink inward, sidebar segments disappear top-to-bottom
 2. **Midpoint (150ms):** Old screen teardown → new screen setup
-3. **Second half (150-300ms):** New screen's bars extend outward (bar length × t)
+3. **Second half (400ms):** New screen's frame assembles with sequential reveal
 
-Elbows and sidebar remain visible throughout — only the bars animate. The screen title appears on the extending bar once it's long enough (>20px past the start).
+**Sequential reveal timing (second half, normalized t = 0.0 to 1.0):**
+
+| Phase | Time | Element | Animation |
+|-------|------|---------|-----------|
+| 1 | t = 0.0 – 0.2 | Elbows | Appear instantly — structural anchors. Fully visible before bars begin. |
+| 2 | t = 0.2 – 0.6 | Bars | Extend from elbows with `easeOutQuad`. Starts AFTER elbows are complete. |
+| 3 | t = 0.6 – 1.0 | Sidebar segments | Reveal one by one, top to bottom. Starts AFTER bars are fully extended. |
+
+**Critical: phases are SEQUENTIAL, not overlapping.** Each phase must complete before the next begins. The elbows appear first because they are the structural anchors — everything else radiates outward from them. The bars sweep left-to-right using `easeOutQuad` for a smooth deceleration ("locking into place" feel). Sidebar segments fill in last, one at a time from top to bottom. At 800ms total transition (2 × 400ms halves), each phase gets ~160ms — enough to be visually distinct.
+
+The screen title appears on the extending bar only once the bar is long enough (>20px past the elbow), preventing text from rendering on an impossibly short bar.
 
 ### 8.3 Easing Functions
 
@@ -742,6 +754,20 @@ These run every frame without explicit state management:
 
 - **Data cascade:** Characters update every `LCARS_CASCADE_SPEED_MS = 50ms` via a time-based hash (`millis() / 50 + seed`). Uses Knuth's multiplicative hash for pseudo-random appearance.
 - **Blinking indicator:** Toggles between filled circle and outline ring every `LCARS_BLINK_INTERVAL_MS = 500ms` using `(millis() / 500) % 2`.
+
+### 8.5 Transition Design Philosophy
+
+**Why staggered reveal?** There is no canonical LCARS screen transition animation from the original Star Trek shows. The TNG-era LCARS panels (1987-1994) were physically **static backlit transparencies** — hand-painted acetate film with colored gels, mounted on plexiglass, lit from behind with fluorescent tubes. The "animation" was achieved through polarizing film technology: a spinning polarized filter behind the panel interacted with small polarized patches, creating a shimmer/pulse effect. No elements ever actually moved, grew, or transitioned structurally.
+
+Post-First Contact (1996+), video-fed LCD/CRT screens replaced the backlit panels, but production focused on looping ambient animations (pulsing bars, scrolling data cascades) rather than structured panel transitions.
+
+Since no canonical reference exists, the staggered reveal approach is based on:
+
+1. **The LCARS Manifesto** (lcars-terminal.de): "Animations to signal interface changes should be simple and snappy like fade in and out. Interface animation sequence should not exceed 1 second. Animation is not a core part of LCARS." This engine's transitions total 300ms — well under the 1-second guideline.
+
+2. **Modern recreation consensus**: Projects like LCARS-47, Project RITOS, cb-lcars, and various CodePen recreations universally use staggered reveal with animation delays. The dominant direction is outward from the elbows.
+
+3. **Structural logic**: Elbows are the anchoring geometry of LCARS. Bars extend from elbows. Sidebar fills between elbows. Building in this order (anchors → structure → detail) communicates "the interface is assembling itself" — a natural visual hierarchy.
 
 ---
 

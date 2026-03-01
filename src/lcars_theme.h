@@ -11,15 +11,21 @@
 struct LcarsTheme {
     const char* name;
 
-    // Structural frame colors
-    uint16_t elbowTop;          // Top elbow color
-    uint16_t elbowBottom;       // Bottom elbow color
+    // Structural frame colors — left side
+    uint16_t elbowTop;          // Top-left elbow color
+    uint16_t elbowBottom;       // Bottom-left elbow color
     uint16_t barTop;            // Top bar extension color
     uint16_t barBottom;         // Bottom bar extension color
 
-    // Sidebar segment colors (up to 4 segments)
+    // Left sidebar segment colors (up to 4 segments)
     uint16_t sidebar[4];
     uint8_t  sidebarCount;      // How many sidebar segments to use
+
+    // Structural frame colors — right side (0 = use pill cap, no right frame)
+    uint16_t elbowTopRight;     // Top-right elbow color
+    uint16_t elbowBottomRight;  // Bottom-right elbow color
+    uint16_t sidebarRight[4];   // Right sidebar segment colors
+    uint8_t  sidebarRightCount; // How many right sidebar segments (0 = no right frame)
 
     // Content colors
     uint16_t text;              // Primary text
