@@ -15,49 +15,54 @@ void LcarsFrame::drawElbow(TFT_eSprite& spr, int16_t x, int16_t y,
     // This avoids holes from drawSmoothArc(ir=0) not filling to center
 
     switch (pos) {
-        case LCARS_ELBOW_TL:
+        case LCARS_ELBOW_TL: {
             // ████████████  <- bar row (full width ew)
             // ██████╲
             // ██████ │     <- sidebar column (sideW)
+            int16_t cx = x + sideW, cy = y + barH;
             spr.fillRect(x, y, ew, barH, color);                    // Bar
-            spr.fillRect(x, y + barH, sideW, innerR, color);        // Sidebar
-            // Colored arc fills the curved transition area (upper-left quadrant from center)
-            spr.drawSmoothArc(x + sideW, y + barH, innerR, 0,
+            spr.fillRect(x, cy, sideW, innerR, color);              // Sidebar
+            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
+            spr.drawSmoothArc(cx, cy, innerR, 0,
                               270, 360, color, LCARS_BLACK, false);
             break;
-
-        case LCARS_ELBOW_TR:
+        }
+        case LCARS_ELBOW_TR: {
             // ████████████  <- bar row
             //       ╱██████
             //      │ ██████  <- sidebar on right
+            int16_t cx = x + innerR, cy = y + barH;
             spr.fillRect(x, y, ew, barH, color);                    // Bar
-            spr.fillRect(x + innerR, y + barH, sideW, innerR, color); // Sidebar
-            // Upper-right quadrant
-            spr.drawSmoothArc(x + innerR, y + barH, innerR, 0,
+            spr.fillRect(cx, cy, sideW, innerR, color);             // Sidebar
+            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
+            spr.drawSmoothArc(cx, cy, innerR, 0,
                               0, 90, color, LCARS_BLACK, false);
             break;
-
-        case LCARS_ELBOW_BL:
+        }
+        case LCARS_ELBOW_BL: {
             // ██████ │     <- sidebar on left
             // ██████╱
             // ████████████  <- bar row
+            int16_t cx = x + sideW, cy = y + innerR;
             spr.fillRect(x, y, sideW, innerR, color);               // Sidebar
-            spr.fillRect(x, y + innerR, ew, barH, color);           // Bar
-            // Lower-left quadrant
-            spr.drawSmoothArc(x + sideW, y + innerR, innerR, 0,
+            spr.fillRect(x, cy, ew, barH, color);                   // Bar
+            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
+            spr.drawSmoothArc(cx, cy, innerR, 0,
                               180, 270, color, LCARS_BLACK, false);
             break;
-
-        case LCARS_ELBOW_BR:
+        }
+        case LCARS_ELBOW_BR: {
             //      │ ██████  <- sidebar on right
             //       ╲██████
             // ████████████  <- bar row
-            spr.fillRect(x + innerR, y, sideW, innerR, color);      // Sidebar
-            spr.fillRect(x, y + innerR, ew, barH, color);           // Bar
-            // Lower-right quadrant
-            spr.drawSmoothArc(x + innerR, y + innerR, innerR, 0,
+            int16_t cx = x + innerR, cy = y + innerR;
+            spr.fillRect(cx, y, sideW, innerR, color);              // Sidebar
+            spr.fillRect(x, cy, ew, barH, color);                   // Bar
+            spr.fillCircle(cx, cy, innerR - 1, color);              // Solid fill under arc
+            spr.drawSmoothArc(cx, cy, innerR, 0,
                               90, 180, color, LCARS_BLACK, false);
             break;
+        }
     }
 }
 
@@ -120,11 +125,9 @@ void LcarsFrame::drawSidebar(TFT_eSprite& spr, int16_t x, int16_t y,
         int16_t sy = y + i * (segH + gap);
         int16_t actualH = (i == count - 1) ? (y + h - sy) : segH;
 
-        // Main segment rectangle (left-aligned, flat left edge)
-        spr.fillRect(x, sy, w - 4, actualH, colors[i]);
-
-        // Rounded right edge (pill-like right side)
-        spr.fillSmoothRoundRect(x + w - 8, sy, 8, actualH, 4, colors[i], LCARS_BLACK);
+        // Full-width rounded rect, then square off left side
+        spr.fillSmoothRoundRect(x, sy, w, actualH, 4, colors[i], LCARS_BLACK);
+        spr.fillRect(x, sy, 4, actualH, colors[i]);  // Flat left edge
     }
 }
 
